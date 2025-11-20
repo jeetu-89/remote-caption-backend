@@ -3,5 +3,5 @@ dotenv.config();
 
 export const config = {
   PORT: process.env.PORT || 4000,
-  UPLOAD_DIR: process.env.UPLOAD_DIR || "src/uploads"
+  UPLOAD_DIR: process.env.UPLOAD_DIR || "uploads"
 };

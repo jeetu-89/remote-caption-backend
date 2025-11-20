@@ -1,12 +1,10 @@
 import { Router } from "express";
 import uploadRoutes from "./upload.routes";
+import sttRoutes from "./sst.routes";
 
 const router = Router();
 
-router.get("/", (req, res) => {
-  res.json({ message: "API is working!" });
-});
-
 router.use("/upload", uploadRoutes);
+router.use("/stt", sttRoutes);
 
 export default router;
