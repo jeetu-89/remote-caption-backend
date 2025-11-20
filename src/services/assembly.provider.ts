@@ -1,6 +1,6 @@
+// src/services/assembly.provider.ts
 import axios from "axios";
 import fs from "fs";
-import FormData from "form-data";
 
 export class AssemblyProvider {
   private static baseUrl = "https://api.assemblyai.com/v2";
@@ -9,29 +9,23 @@ export class AssemblyProvider {
     const apiKey = process.env.ASSEMBLYAI_API_KEY;
     if (!apiKey) throw new Error("ASSEMBLYAI_API_KEY missing in .env");
 
-    // Step 1 — Upload audio to AssemblyAI
-    const uploadUrl = `${this.baseUrl}/upload`;
-
-    const audioStream = fs.createReadStream(audioFilePath);
-
+    // Step 1 — UPLOAD audio file
     const uploadRes = await axios({
       method: "post",
-      url: uploadUrl,
+      url: `${this.baseUrl}/upload`,
+      data: fs.createReadStream(audioFilePath),
       headers: {
         authorization: apiKey,
-        "transfer-encoding": "chunked"
-      },
-      data: audioStream
+        "transfer-encoding": "chunked",
+      }
     });
 
     const audioUrl = uploadRes.data.upload_url;
 
-    // Step 2 — Request transcription
-    const transcribeRes = await axios.post(
+    // Step 2 — CREATE transcription request
+    const createRes = await axios.post(
       `${this.baseUrl}/transcript`,
-      {
-        audio_url: audioUrl,
-      },
+      { audio_url: audioUrl },
       {
         headers: {
           authorization: apiKey,
@@ -40,28 +34,26 @@ export class AssemblyProvider {
       }
     );
 
-    const transcriptId = transcribeRes.data.id;
+    const transcriptId = createRes.data.id;
 
-    // Step 3 — Poll until completed
+    // Step 3 — POLL until complete
     while (true) {
-      const statusRes = await axios.get(
+      const polling = await axios.get(
         `${this.baseUrl}/transcript/${transcriptId}`,
         {
-          headers: {
-            authorization: apiKey,
-          },
+          headers: { authorization: apiKey },
         }
       );
 
-      if (statusRes.data.status === "completed") {
-        return statusRes.data.text;
+      if (polling.data.status === "completed") {
+        return polling.data.text;
       }
 
-      if (statusRes.data.status === "error") {
-        throw new Error("Transcription failed: " + statusRes.data.error);
+      if (polling.data.status === "error") {
+        throw new Error("Transcription failed: " + polling.data.error);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((r) => setTimeout(r, 1500));
     }
   }
 }
